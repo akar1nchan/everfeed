@@ -1,0 +1,236 @@
+<html>
+
+<head>
+	<meta charset='utf-8'>
+	<title>Cloud Status</title>
+	<script type="text/javascript" src="bower_components/angular/angular.min.js"></script>
+	<script type="text/javascript" src="bower_components/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="bower_components/storedb/storedb.js"></script>
+	<script type="text/javascript" src="bower_components/jquery-rss/dist/jquery.rss.min.js"></script>
+	<script type="text/javascript" src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="bower_components/bootstrap/dist/css/bootstrap.min.css" />
+	<meta name="theme-color" content="#000000">
+	<link rel="short icon" href="https://ky0n.xyz/favicon.png">
+	<link rel="stylesheet" type="text/css" href="static/typo.css">
+	<style>
+		img {
+			max-width: 100%;
+			height: auto;
+		}
+	</style>
+	<!--<script>
+		var url = window.location.href;
+		if (url.indexOf("https") < 0) {
+			url = url.replace("http:", "https:");
+			window.location.replace(url);
+		}
+	</script>-->
+	<script type="text/javascript">
+		var parseRSS = function(url) {
+			jQuery(function($) {
+				$(".collapse").collapse()
+				$("#content").rss(url, {
+					limit: 20,
+					tokens: {
+						ti: function(tokens) {
+							return tokens.feed
+						}
+					},
+					layoutTemplate: '<div class="pannel-group" id="accordion">{entries}</div>',
+					entryTemplate: '<div class="panel panel-default typo"><div class="panel-heading"><h4 class="panel-title"> <a data-toggle="collapse" data-parent="#accordion" href="#{index}"><strong>{title}</strong></a></h4></div><div id={index} class="panel-collapse collapse"><div class="panel-body"><p><span class="label label-info">本文作者：{author}</span><span class="pull-right">{date}</span><p><a href={url}>原文地址：{url}</a></p></p>{body}</div></div></div>'
+				})
+			})
+		}
+
+		//angular
+
+		var app = angular.module('feed', []);
+
+		var FeedListCtrl = function($scope) {
+			$scope.lists = storedb('feed').find();
+			$scope.listShow = function(url, row) {
+				document.getElementById('content').innerHTML = ""
+				$scope.listRow = row;
+				$scope.recomRow = -1;
+				parseRSS(url)
+			}
+			$scope.recomShow = function(url, row) {
+				document.getElementById('content').innerHTML = ""
+				$scope.recomRow = row;
+				$scope.listRow = -1;
+				parseRSS(url)
+			}
+			$scope.test = function() {
+				alert('a')
+			}
+			$scope.addFeed = function(url, name) {
+				storedb('feed').insert({
+					"feedName": name,
+					"feedURL": url
+				}, function(err, res) {
+					if (!err) {
+						jQuery(function($) {
+							$('#addFeed').modal('hide')
+						})
+						$scope.lists = storedb('feed').find();
+					}
+				})
+			}
+			$scope.removeFeed = function(id) {
+				storedb('feed').remove({
+					"_id": id
+				}, function(err) {
+					if (!err) {
+						$scope.lists = storedb('feed').find();
+					}
+				})
+			}
+			$scope.addToList = function(url, name) {
+				storedb('feed').insert({
+					"feedName": name,
+					"feedURL": url
+				}, function(err, res) {
+					if (!err) {
+						$scope.lists = storedb('feed').find();
+					}
+				})
+			}
+			$scope.recommendation = [{
+					"feedName": "Linode",
+					"feedURL": "https://status.linode.com/history.atom"
+				}, {
+					"feedName": "DigitalOcean",
+					"feedURL": "https://status.digitalocean.com/rss"
+				}, {
+					"feedName": "Joyent",
+					"feedURL": "http://status.joyent.com/pages/571f84cafe9259916000283c/rss"
+				}, {
+					"feedName": "Google Cloud Status",
+					"feedURL": "https://status.cloud.google.com/feed.atom"
+				}, {
+					"feedName": "Google Apps Status",
+					"feedURL": "https://www.google.com/appsstatus/rss/en"
+				}, {
+					"feedName": "Rackspace",
+					"feedURL": "https://status.rackspace.com/index/rss"
+				}, {
+					"feedName": "Heroku",
+					"feedURL": "https://status.heroku.com/feed"
+				},
+
+			]
+		}
+	</script>
+
+</head>
+
+<body ng-app="feed" data-spy="scroll" data-target=".nav-example">
+	<nav class="navbar navbar-default" role="banner">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="/everfeed">Cloud Status</a>
+
+		</div>
+		<strong class="navbar-text"> </strong>
+		<a class="navbar-text" href="https://github.com/ky0ncheng/Cloud-Status">Open Source on Github</a>
+		<span class="navbar-text">RSS Reader By <a href="http://djyde.github.io">Randy</a></span>
+	</nav>
+	<div class="container">
+		<div id="layout" class="container">
+			<div class="row">
+
+				<div id="sidebar" class="sidebar col-md-4" ng-controller="FeedListCtrl">
+
+					<h4 style="margin-bottom: 10px;">
+							<span>Add Feed</span>
+							<span class="glyphicon glyphicon-plus small" style="text-decoration: none; cursor: pointer" data-toggle="modal" data-target="#addFeed"></span>
+						</h4>
+					<ul class="nav-example nav nav-pills nav-stacked" ng-repeat="list in lists">
+
+						<li ng-class="{active: $index==listRow}">
+							<a href="javascript:void()" ng-click="listShow(list.feedURL,$index)">
+
+      						{{list.feedName}}
+      						<button type="button" class="close pull-right" aria-hidden="true" ng-click="removeFeed(list._id)">&times;</button>
+    						</a>
+
+						</li>
+					</ul>
+
+					<h4 style="margin-bottom: 10px; margin-top: 10px;">
+							<span>Lists</span>
+						</h4>
+					<ul class="nav-example nav nav-pills nav-stacked" ng-repeat="list in recommendation">
+						<li ng-class="{active: $index==recomRow}">
+							<a href="javascript:void()" ng-click="recomShow(list.feedURL,$index)">
+      						{{list.feedName}}
+      						<span type="button" class="glyphicon glyphicon-plus pull-right" aria-hidden="true" ng-click="addToList(list.feedURL,list.feedName)"></span>
+    						</a>
+						</li>
+					</ul>
+					<br>
+					<a class="btn btn-secondary" href="https://azure.microsoft.com/en-us/status/" target="_blank" role="button">Azure</a>
+					<br>
+					<a class="btn btn-secondary" href="http://status.aws.amazon.com/" target="_blank" role="button">Amazon Web Services</a>
+
+
+
+
+
+					<div class="modal fade" id="addFeed" tabindex="-1" role="dialog" aria-labelledby="addFeed" aria-hidden="true">
+						<div class="modal-dialog">
+							<div class="modal-content">
+								<div class="modal-header">
+									<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+									<h4 class="modal-title" id="addFeed">Add Feed</h4>
+								</div>
+								<div class="modal-body">
+									<form class="form-horizontal" id="addFeedDlg" role="form">
+										<div class="form-group">
+											<label for="url">RSS Link：</label>
+											<input type="text" id="url" class="form-control" ng-model="url" />
+										</div>
+										<div class="form-group">
+											<label for="name">Title：</label>
+											<input type="text" id="name" class="form-control" ng-model="name" />
+										</div>
+									</form>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+									<button type="button" class="btn btn-primary" ng-click="addFeed(url,name)">Add</button>
+								</div>
+							</div>
+							<!-- /.modal-content -->
+						</div>
+						<!-- /.modal-dialog -->
+					</div>
+					<!-- /.modal -->
+				</div>
+
+
+
+				<div id="content" class="col-md-8">
+
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<script>
+		(function(b, o, i, l, e, r) {
+			b.GoogleAnalyticsObject = l;
+			b[l] || (b[l] = function() {
+				(b[l].q = b[l].q || []).push(arguments)
+			});
+			b[l].l = +new Date;
+			e = o.createElement(i);
+			r = o.getElementsByTagName(i)[0];
+			e.src = '//www.google-analytics.com/analytics.js';
+			r.parentNode.insertBefore(e, r)
+		}(window, document, 'script', 'ga'));
+		ga('create', "UA-70500040-1", 'auto');
+		ga('send', 'pageview');
+	</script>
+</body>
+
+</html>
